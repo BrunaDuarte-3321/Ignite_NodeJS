@@ -1,48 +1,27 @@
 import http from 'node:http'
 import { json } from './middlewares/json.js'
-import { Database } from './database.js'
-import { randomUUID } from 'node:crypto'
+import { routes } from './routes.js'
  
 
 
-  const database = new Database()
  const server = http.createServer(async(req, res) => {
   const {method, url} = req
 
   await json(req, res)
-  
 
-  if(method === 'GET' && url === '/users'){
+  const route = routes.find(route => {
+    return route.method === method && route.path.test(url)
+  })
 
-    const users = database.select('users')
-    return res
-    .end(JSON.stringify(users))
-  } 
+  if(route) {
+    const routeParams = req.url.match(route.path)
+    req.params = {...routeParams.groups}
 
-  if(method === 'POST' && url ==='/users'){
-   
-    const {name, email} = req.body
-
-    const user = {
-      id: randomUUID(),
-      name,
-      email,
-    }
-    if(user){
-
-      database.insert('users', user)
-
-      return res
-       
-      .setHeader('Content-type', 'application/json')
-      .end(JSON.stringify(user))
-    }
-    
-    return res.end('Dados pendentes')
+    console.log(routeParams)
+    return route.handler(req, res)
   }
 
-  //Early return 
-
+  console.log(route)
   return res.writeHead(404).end('Not Found')
 })
 
