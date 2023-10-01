@@ -1,9 +1,11 @@
 import http from 'node:http'
 import { json } from './middlewares/json.js'
+import { Database } from './database.js'
+import { randomUUID } from 'node:crypto'
  
 
 
- const users = []
+  const database = new Database()
  const server = http.createServer(async(req, res) => {
   const {method, url} = req
 
@@ -11,6 +13,8 @@ import { json } from './middlewares/json.js'
   
 
   if(method === 'GET' && url === '/users'){
+
+    const users = database.select('users')
     return res
     .end(JSON.stringify(users))
   } 
@@ -20,16 +24,18 @@ import { json } from './middlewares/json.js'
     const {name, email} = req.body
 
     const user = {
-      id: 1,
+      id: randomUUID(),
       name,
       email,
     }
     if(user){
-      users.push(user)
+
+      database.insert('users', user)
+
       return res
        
       .setHeader('Content-type', 'application/json')
-      .end(JSON.stringify(users))
+      .end(JSON.stringify(user))
     }
     
     return res.end('Dados pendentes')
